@@ -633,11 +633,37 @@ async function doSearch(){
   document.getElementById('sbtn').disabled=false;
 }
 
+// ✅ 다중 프록시 폴백 — 하나 실패하면 다음으로 자동 전환
+const PROXIES = [
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+async function fetchWithProxy(yahooUrl) {
+  for(let i=0; i<PROXIES.length; i++){
+    try{
+      const proxyUrl = PROXIES[i](yahooUrl);
+      const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+      if(!r.ok) continue;
+      const text = await r.text();
+      // allorigins는 {contents:"..."} 형태, 나머지는 직접 JSON
+      try{
+        const wrap = JSON.parse(text);
+        if(wrap.contents) return JSON.parse(wrap.contents);
+        return wrap;
+      }catch{
+        return JSON.parse(text);
+      }
+    }catch(e){ continue; }
+  }
+  throw new Error('모든 프록시 서버 연결 실패. 잠시 후 다시 시도해주세요.');
+}
+
 async function fetchQ(ticker){
   const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
-  const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-  const j=await r.json();
-  const d=JSON.parse(j.contents)?.chart?.result?.[0]; if(!d) return null;
+  const data = await fetchWithProxy(url);
+  const d = data?.chart?.result?.[0]; if(!d) return null;
   const m=d.meta;
   return{ ticker:m.symbol, name:m.longName||m.shortName||m.symbol, exchange:m.exchangeName||'NASDAQ',
     currency:m.currency||'USD', price:m.regularMarketPrice, prevClose:m.chartPreviousClose||m.previousClose,
@@ -649,9 +675,8 @@ async function fetchQ(ticker){
 async function fetchCh(ticker,period){
   const im={'1d':'5m','5d':'30m','1mo':'1d','3mo':'1d','6mo':'1wk','1y':'1wk'};
   const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${im[period]||'1d'}&range=${period}`;
-  const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-  const j=await r.json();
-  const d=JSON.parse(j.contents)?.chart?.result?.[0]; if(!d) return null;
+  const data = await fetchWithProxy(url);
+  const d = data?.chart?.result?.[0]; if(!d) return null;
   return{ timestamps:d.timestamp||[], closes:d.indicators?.quote?.[0]?.close||[], volumes:d.indicators?.quote?.[0]?.volume||[] };
 }
 
