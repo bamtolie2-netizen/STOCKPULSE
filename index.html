@@ -515,7 +515,7 @@ const SUPABASE_URL = 'https://nhpkacfvipspetjkskrl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ocGthY2Z2aXBzcGV0amtza3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTcxODUsImV4cCI6MjA5MDQ3MzE4NX0.PNGvYWIM_KPZsVv6OEJ7dwJ1lpOXtivYENoA_2Jenss';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const CAPI = 'https://api.anthropic.com/v1/messages';
+const CAPI = 'https://nhpkacfvipspetjkskrl.supabase.co/functions/v1/claude-proxy';
 let curTicker='', curData=null, pChart=null, vChart=null, curPeriod='1d', isDark=true;
 let wl=[], port=[], alerts=[];
 let currentUserId = null;
